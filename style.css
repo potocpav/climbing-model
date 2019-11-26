@@ -1,0 +1,13 @@
+body {
+  padding: 50px;
+  background: #f0f0f0;
+}
+
+.page {
+  border-radius: 5px;
+  padding: 30px;
+  background: white;
+  margin: 0 auto;
+  width: 600px;
+  min-height: 300px;
+}
