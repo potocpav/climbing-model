@@ -9,7 +9,7 @@
     <!-- Content of my page -->
     <div class="page">
       <h1>Climbing Force Simulator</h1>
-      <p>Circles represent climber's <span style="color: green; font-weight: bold">hands</span>, <span style="color: blue; font-weight: bold">feet</span>, and the <span style="color: #111; font-weight: bold">center of mass</span>. Try dragging these circles around, and see how the forces required to hold on change. You can change the forces by varying the amount of body tension using the slider.</p>
+      <p>Circles represent climber's <span style="color: green; font-weight: bold">hands</span>, <span style="color: blue; font-weight: bold">feet</span>, and the <span style="color: #111; font-weight: bold">center of mass</span>. Try dragging these circles around, and see how the forces required to hold on change. You can also change the forces by varying the amount of body tension using the slider.</p>
       <div class="slidecontainer">
         Which force to minimize:
         <input type="range" min="0" max="100" value="0" class="slider" id="force_slider">
@@ -25,9 +25,9 @@
       <div>
         <h2>Presets</h2>
         <ul>
-          <li><a href="javascript:void(0)" id="scene-default">Overhang</a>. Try playing with the slider. You can hang entirely from your hands, or you can push some weight through your legs. This decreases the hand force, but worsens its angle.</li>
-          <li><a href="javascript:void(0)" id="scene-vertical">Hanging on a vertical wall</a>. Try adjusting the force slider. This illustrates how you can either "hang" or "stand" without changing body position.</li>
-          <li><a href="javascript:void(0)" id="scene-slab">Climbing a slab</a>. Try moving the center of mass. When it is farther from the wall, the force through legs is at a better angle to the rock. It is possible to use body tension to create a better force angle in legs, but this is at the cost of the angle in hands.</li>
+          <li><a href="javascript:void(0)" id="scene-default">Overhang</a>. Try playing with the slider. You can hang entirely from your hands, or you can push some weight through your legs. This requires body tension and worsens the force angle, but decreases the required force.</li>
+          <li><a href="javascript:void(0)" id="scene-vertical">Hanging on a vertical wall</a>. This illustrates how you can either "hang" or "stand" without changing body position: try adjusting the slider.</li>
+          <li><a href="javascript:void(0)" id="scene-slab">Climbing a slab</a>. Try moving the center of mass. When it is farther from the wall, the force through legs is at a better angle to the rock. It is possible to use body tension to create an even better force angle in legs, but this worsens the angle in hands.</li>
         </ul>
       </div>
     </div>

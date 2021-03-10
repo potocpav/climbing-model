@@ -29,7 +29,7 @@ let norm = ([px, py]) => {
   return Math.sqrt(px * px + py * py)
 };
 
-/// See `maths.py` for the derivation of the below equations.
+/// See `maths.py` for the derivation of the equations below.
 let calc_forces = climber => {
   let r_1x = climber.hands[0] - climber.center[0];
   let r_1y = climber.hands[1] - climber.center[1];
