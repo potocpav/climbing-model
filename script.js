@@ -1,8 +1,8 @@
 
 // Maths
 
-let l2 = (a, b) => {
-  return Math.sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]));
+let l2 = ([ax, ay], [bx, by]) => {
+  return Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
 }
 
 let project = (camera, w, h) => pt => {
@@ -23,6 +23,10 @@ let inv_project = (camera, w, h) => pt => {
 let interpolate = (p1, p2, t) => {
   return [p1[0] * (1 - t) + p2[0] * t, p1[1] * (1 - t) + p2[1] * t];
 }
+
+let norm = ([px, py]) => {
+  return Math.sqrt(px * px + py * py)
+};
 
 /// See `maths.py` for the derivation of the below equations.
 let calc_forces = climber => {
@@ -45,39 +49,77 @@ let calc_forces = climber => {
 
   return {
     "min_hands": {"hands": [f_1xa, f_1ya], "legs": [f_2xa, f_2ya]},
-    "min_legs": {"hands": [f_1xb, f_1yb], "legs": [f_2xb, f_2yb]}
+    "min_legs": {"hands": [f_1xb, f_1yb], "legs": [f_2xb, f_2yb]},
   };
 }
 
+let calc_torque = ([r_x, r_y], [f_x, f_y]) => {
+  return Math.abs(r_x * f_y - r_y * f_x);
+}
+
+let minus = ([ax, ay], [bx, by]) => [ax - bx, ay - by];
+
+let dot = ([ax, ay], [bx, by]) => ax * bx + ay * by;
+
 // Draw
+
+let draw_force_range = (ctx, pos, f1, f2, fac, color) => {
+  let scale = 1.0;
+  let f = interpolate(f1, f2, fac);
+
+  // value range
+  ctx.beginPath();
+  ctx.globalAlpha = 0.2
+  ctx.fillStyle = color
+  ctx.moveTo(pos[0], pos[1]);
+  ctx.lineTo(pos[0] + f1[0] * scale, pos[1] + f1[1] * scale);
+  ctx.lineTo(pos[0] + f2[0] * scale, pos[1] + f2[1] * scale);
+  ctx.fill();
+
+  // force arrow
+  let width = 3;
+  let head_size = width * 2;
+  let dx = f[0] / norm(f);
+  let dy = f[1] / norm(f);
+  let tip = [pos[0] + f[0] * scale, pos[1] + f[1] * scale];
+
+  ctx.beginPath();
+  ctx.lineWidth = width;
+  ctx.globalAlpha = 1.0
+  ctx.strokeStyle = color
+  ctx.moveTo(pos[0], pos[1]);
+  ctx.lineTo(tip[0], tip[1]);
+  ctx.moveTo(tip[0] + (dy - dx) * head_size, tip[1] + (-dy - dx) * head_size);
+  ctx.lineTo(tip[0], tip[1]);
+  ctx.lineTo(tip[0] + (-dy - dx) * head_size, tip[1] + (-dy + dx) * head_size);
+  ctx.stroke();
+};
 
 let draw = (canvas, state) => {
   var ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let project_ap = project(state.camera, canvas.width, canvas.height);
+  let project_dir_ap = project_dir(state.camera, canvas.width);
 
   let center_px = project_ap(climber.center);
   let legs_px = project_ap(climber.legs);
   let hands_px = project_ap(climber.hands);
 
+  ctx.lineWidth = 3;
+
+  // Draw the wall
+  let [dx, dy] = minus(hands_px, legs_px);
+  let invert = dot([dy, -dx], minus(center_px, legs_px)) > 0 ? 1 : -1;
+  [dx, dy] = [dx / norm([dx, dy]) * invert, dy / norm([dx, dy]) * invert];
+
+  var my_gradient = ctx.createLinearGradient(legs_px[0], legs_px[1], legs_px[0] - dy, legs_px[1] + dx);
+  my_gradient.addColorStop(0, "white");
+  my_gradient.addColorStop(1, "lightgray");
+  ctx.fillStyle = my_gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   // Draw the climber
-
-  ctx.beginPath();
-  ctx.strokeStyle = "gray";
-  ctx.arc(center_px[0], center_px[1], 20, 0, 2 * Math.PI);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "red";
-  ctx.arc(legs_px[0], legs_px[1], 10, 0, 2 * Math.PI);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "blue";
-  ctx.arc(hands_px[0], hands_px[1], 10, 0, 2 * Math.PI);
-  ctx.stroke();
-
   ctx.beginPath();
   ctx.strokeStyle = "lightgray";
   ctx.moveTo(hands_px[0], hands_px[1]);
@@ -85,64 +127,68 @@ let draw = (canvas, state) => {
   ctx.lineTo(legs_px[0], legs_px[1]);
   ctx.stroke();
 
+  ctx.beginPath();
+  ctx.strokeStyle = "gray";
+  ctx.arc(center_px[0], center_px[1], 20, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = "blue";
+  ctx.arc(legs_px[0], legs_px[1], 10, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = "red";
+  ctx.arc(hands_px[0], hands_px[1], 10, 0, 2 * Math.PI);
+  ctx.stroke();
+
   // Draw forces
   let forces = calc_forces(climber);
-  let f_h1_px = project_dir(state.camera, canvas.width)(forces.min_hands.hands);
-  let f_h2_px = project_dir(state.camera, canvas.width)(forces.min_legs.hands);
-  let f_h_px = interpolate(f_h1_px, f_h2_px, state.force_distribution);
-  let f_l1_px = project_dir(state.camera, canvas.width)(forces.min_hands.legs);
-  let f_l2_px = project_dir(state.camera, canvas.width)(forces.min_legs.legs);
-  let f_l_px = interpolate(f_l1_px, f_l2_px, state.force_distribution);
-  let fs = 0.5; // force visual scale
+  let f_h1_px = project_dir_ap(forces.min_hands.hands);
+  let f_h2_px = project_dir_ap(forces.min_legs.hands);
+  let f_l1_px = project_dir_ap(forces.min_hands.legs);
+  let f_l2_px = project_dir_ap(forces.min_legs.legs);
 
-  // hands
-  ctx.beginPath();
-  ctx.fillStyle = '#fcc'
-  ctx.moveTo(hands_px[0], hands_px[1]);
-  ctx.lineTo(hands_px[0] + f_h1_px[0] * fs, hands_px[1] + f_h1_px[1] * fs);
-  ctx.lineTo(hands_px[0] + f_h2_px[0] * fs, hands_px[1] + f_h2_px[1] * fs);
-  ctx.fill();
+  draw_force_range(ctx, hands_px, f_h1_px, f_h2_px, state.force_distribution, "red");
+  draw_force_range(ctx, legs_px, f_l1_px, f_l2_px, state.force_distribution, "blue");
 
-  ctx.beginPath();
-  ctx.strokeStyle = '#f00'
-  ctx.moveTo(hands_px[0], hands_px[1]);
-  ctx.lineTo(hands_px[0] + f_h_px[0] * fs, hands_px[1] + f_h_px[1] * fs);
-  ctx.stroke();
+  // Draw text
+  let f_hands = interpolate(forces.min_hands.hands, forces.min_legs.hands, state.force_distribution);
+  let f_legs = interpolate(forces.min_hands.legs, forces.min_legs.legs, state.force_distribution);
+  let r = [climber.hands[0] - climber.center[0], climber.hands[1] - climber.center[1]];
+  let torque = calc_torque(r, f_hands);
 
-  // legs
-  ctx.beginPath();
-  ctx.fillStyle = '#ccf'
-  // ctx.strokeStyle = '#00f'
-  ctx.moveTo(legs_px[0], legs_px[1]);
-  ctx.lineTo(legs_px[0] + f_l1_px[0] * fs, legs_px[1] + f_l1_px[1] * fs);
-  ctx.lineTo(legs_px[0] + f_l2_px[0] * fs, legs_px[1] + f_l2_px[1] * fs);
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#f00'
-  ctx.moveTo(legs_px[0], legs_px[1]);
-  ctx.lineTo(legs_px[0] + f_l_px[0] * fs, legs_px[1] + f_l_px[1] * fs);
-  ctx.stroke();
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "red";
+  ctx.fillText("Hand force:", 10, 40);
+  ctx.fillStyle = "blue";
+  ctx.fillText("Leg force:", 10, 70);
+  ctx.fillStyle = "#444";
+  ctx.fillText("Body tension:", 10, 100);
+  ctx.fillStyle = "#000";
+  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 150, 40);
+  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 150, 70);
+  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 150, 100);
 
 };
 
 // Initial State
 
 var climber = {
-  "center": [0, 0],
-  "legs": [1, -1],
-  "hands": [-1, 1]
+  center: [-0.5, -0.5],
+  legs: [1, -1],
+  hands: [-0.5, 1]
 };
 
 var camera = {"center": [0, 0], "width": 5};
 
 var state = {
-  "climber": climber,
-  "camera": camera,
-  "dragging_center": false,
-  "dragging_legs": false,
-  "dragging_hands": false,
-  "force_distribution": 0.0,
+  climber: climber,
+  camera: camera,
+  dragging_center: false,
+  dragging_legs: false,
+  dragging_hands: false,
+  force_distribution: 0.0,
 };
 
 // Events

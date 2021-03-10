@@ -1,2 +1,3 @@
-# vanilla-js-starter
-Simple Starter for beginners
+# Simple Climber Model
+
+[run here](https://potocpav.github.io/climbing-model/)

@@ -1,6 +1,12 @@
 body {
   padding: 50px;
   background: #f0f0f0;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  font-size: 150%;
+  margin-bottom: 2rem;
 }
 
 .page {
@@ -18,6 +24,7 @@ canvas {
 
 .slidecontainer {
   width: 100%; /* Width of the outside container */
+  margin: 1rem 0;
 }
 
 /* The slider itself */
