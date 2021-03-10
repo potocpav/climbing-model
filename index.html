@@ -2,12 +2,19 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>Vanilla JS starter kit</title>
+    <title>Climber Model</title>
   </head>
   <body>
     <!-- Content of my page -->
     <div class="page">
-      <button id="my-button">Click me</button>
+      <div class="slidecontainer">
+        Minimize force:
+        <input type="range" min="0" max="100" value="0" class="slider" id="force_slider">
+        <table class="slider-caption">
+          <tr><td>Hands</td><td>Legs</td></tr>
+        </table>
+      </div>
+      <canvas id="canvas" width=600 height=600></canvas>
     </div>
     <!-- included external sources like scripts and styles -->
     <script src="script.js" charset="utf-8"></script>

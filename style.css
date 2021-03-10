@@ -11,3 +11,34 @@ body {
   width: 600px;
   min-height: 300px;
 }
+
+canvas {
+  border:1px solid black;
+}
+
+.slidecontainer {
+  width: 100%; /* Width of the outside container */
+}
+
+/* The slider itself */
+.slider {
+	appearance: none;
+	width: 100%;
+	height: 25px;
+	background: #aaa;
+	border: 10px solid white;
+	box-sizing: border-box;
+}
+
+.slider-caption {
+  width: 100%;
+}
+
+.slider-caption td:nth-child(1) {
+  color: red;
+}
+
+.slider-caption td:nth-child(2) {
+  text-align: right;
+  color: blue;
+}
