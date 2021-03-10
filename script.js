@@ -259,6 +259,24 @@ document.addEventListener("mouseup", e => {
   // draw(canvas, state);
 });
 
+canvas.addEventListener("touchstart", e => {
+  state = mouseDown(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+  console.log(state);
+  draw(canvas, state);
+  e.preventDefault();
+});
+
+canvas.addEventListener("touchend", e => {
+  state = mouseUp(state);
+  e.preventDefault();
+});
+
+canvas.addEventListener("touchmove", e => {
+  state = mouseDrag(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+  draw(canvas, state);
+  e.preventDefault();
+});
+
 slider.addEventListener("input", e => {
   state.force_distribution = parseInt(e.srcElement.value) / 100;
   draw(canvas, state);
@@ -267,7 +285,6 @@ slider.addEventListener("input", e => {
 
 let onResize = () => {
   let max_width = window.innerHeight * 0.8;
-  console.log(max_width);
   canvas.width = Math.min(max_width, slider.getBoundingClientRect().width);
   canvas.height = canvas.width;
   draw(canvas, state);
