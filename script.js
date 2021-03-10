@@ -1,3 +1,4 @@
+"use strict";
 
 // Maths
 
@@ -102,9 +103,9 @@ let draw = (canvas, state) => {
   let project_ap = project(state.camera, canvas.width, canvas.height);
   let project_dir_ap = project_dir(state.camera, canvas.width);
 
-  let center_px = project_ap(climber.center);
-  let legs_px = project_ap(climber.legs);
-  let hands_px = project_ap(climber.hands);
+  let center_px = project_ap(state.climber.center);
+  let legs_px = project_ap(state.climber.legs);
+  let hands_px = project_ap(state.climber.hands);
 
   ctx.lineWidth = 3;
 
@@ -138,161 +139,206 @@ let draw = (canvas, state) => {
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.strokeStyle = "red";
+  ctx.strokeStyle = "green";
   ctx.arc(hands_px[0], hands_px[1], 10, 0, 2 * Math.PI);
   ctx.stroke();
 
   // Draw forces
-  let forces = calc_forces(climber);
+  let forces = calc_forces(state.climber);
   let f_h1_px = project_dir_ap(forces.min_hands.hands);
   let f_h2_px = project_dir_ap(forces.min_legs.hands);
   let f_l1_px = project_dir_ap(forces.min_hands.legs);
   let f_l2_px = project_dir_ap(forces.min_legs.legs);
 
-  draw_force_range(ctx, hands_px, f_h1_px, f_h2_px, state.force_distribution, "red");
+  draw_force_range(ctx, hands_px, f_h1_px, f_h2_px, state.force_distribution, "green");
   draw_force_range(ctx, legs_px, f_l1_px, f_l2_px, state.force_distribution, "blue");
 
   // Draw text
   let f_hands = interpolate(forces.min_hands.hands, forces.min_legs.hands, state.force_distribution);
   let f_legs = interpolate(forces.min_hands.legs, forces.min_legs.legs, state.force_distribution);
-  let r = [climber.hands[0] - climber.center[0], climber.hands[1] - climber.center[1]];
+  let r = [
+    state.climber.hands[0] - state.climber.center[0],
+    state.climber.hands[1] - state.climber.center[1]];
   let torque = calc_torque(r, f_hands);
 
   ctx.font = "100% Arial";
-  ctx.fillStyle = "red";
-  ctx.fillText("Hand force:", 10, 30);
+  ctx.fillStyle = "green";
+  ctx.fillText("Hand force:", 5, 20);
   ctx.fillStyle = "blue";
-  ctx.fillText("Leg force:", 10, 50);
+  ctx.fillText("Leg force:", 5, 40);
   ctx.fillStyle = "#444";
-  ctx.fillText("Body tension:", 10, 70);
+  ctx.fillText("Body tension:", 5, 60);
   ctx.fillStyle = "#000";
-  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 30);
-  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 135, 50);
-  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 135, 70);
+  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 20);
+  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 135, 40);
+  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 135, 60);
 
 };
 
-// Initial State
-
-var climber = {
-  center: [-0.5, -0.5],
-  legs: [1, -1],
-  hands: [-0.5, 1]
-};
-
-var camera = {"center": [0, 0], "width": 5};
-
-var state = {
-  climber: climber,
-  camera: camera,
-  dragging_center: false,
-  dragging_legs: false,
-  dragging_hands: false,
-  force_distribution: 0.0,
-};
-
-// Events
-
-var canvas = document.getElementById("canvas");
-var slider = document.getElementById("force_slider");
-
-var mouseIsDown = false;
-
-let mouseDown = (state, x, y) => {
-  let project_ap = project(state.camera, canvas.width, canvas.height);
-
-  if (l2([x, y], project_ap(state.climber.center)) < 20) {
-    state.dragging_center = true;
-  }
-
-  if (l2([x, y], project_ap(state.climber.legs)) < 10) {
-    state.dragging_legs = true;
-  }
-
-  if (l2([x, y], project_ap(state.climber.hands)) < 10) {
-    state.dragging_hands = true;
-  }
-  return state;
-};
-
-let mouseUp = (state) => {
-  state.dragging_center = false;
-  state.dragging_legs = false;
-  state.dragging_hands = false;
-  return state;
+let update_ui = state => {
+  let slider = document.getElementById("force_slider");
+  slider.value = state.force_distribution;
 }
-
-let mouseDrag = (state, x, y) => {
-  let inv_project_ap = inv_project(state.camera, canvas.width, canvas.height);
-  let new_pos = inv_project_ap([x, y]);
-
-  if (state.dragging_center) {
-    state.climber.center = new_pos;
-  }
-
-  if (state.dragging_legs) {
-    state.climber.legs = new_pos;
-  }
-
-  if (state.dragging_hands) {
-    state.climber.hands = new_pos;
-  }
-  return state;
-}
-
-canvas.addEventListener("mousedown", e => {
-  state = mouseDown(state, e.x - canvas.offsetLeft, e.y - canvas.offsetTop);
-  mouseIsDown = true;
-  draw(canvas, state);
-});
-
-document.addEventListener("mousemove", e => {
-  if (mouseIsDown) {
-    state = mouseDrag(state, e.x - canvas.offsetLeft, e.y - canvas.offsetTop);
-    draw(canvas, state);
-  }
-});
-
-document.addEventListener("mouseup", e => {
-  state = mouseUp(state);
-  mouseIsDown = false;
-  // draw(canvas, state);
-});
-
-canvas.addEventListener("touchstart", e => {
-  state = mouseDown(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
-  console.log(state);
-  draw(canvas, state);
-  e.preventDefault();
-});
-
-canvas.addEventListener("touchend", e => {
-  state = mouseUp(state);
-  e.preventDefault();
-});
-
-canvas.addEventListener("touchmove", e => {
-  state = mouseDrag(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
-  draw(canvas, state);
-  e.preventDefault();
-});
-
-slider.addEventListener("input", e => {
-  state.force_distribution = parseInt(e.srcElement.value) / 100;
-  draw(canvas, state);
-});
-
-
-let onResize = () => {
-  let max_width = window.innerHeight * 0.8;
-  canvas.width = Math.min(max_width, slider.getBoundingClientRect().width);
-  canvas.height = canvas.width;
-  draw(canvas, state);
-};
 
 window.onload = (event) => {
-  window.onresize = onResize;
+  // Initial State
 
+  let climber = {
+    center: [-0.5, -0.5],
+    legs: [1, -1],
+    hands: [-0.5, 1]
+  };
+
+  let camera = {"center": [0, 0], "width": 5};
+
+  let state = {
+    climber: climber,
+    camera: camera,
+    dragging_center: false,
+    dragging_legs: false,
+    dragging_hands: false,
+    force_distribution: 0.0,
+  };
+
+  // Events
+
+
+  let canvas = document.getElementById("canvas");
+  let slider = document.getElementById("force_slider");
+
+  let mouseIsDown = false;
+
+  let mouseDown = (state, x, y) => {
+    let project_ap = project(state.camera, canvas.width, canvas.height);
+
+    if (l2([x, y], project_ap(state.climber.center)) < 20) {
+      state.dragging_center = true;
+    }
+
+    if (l2([x, y], project_ap(state.climber.legs)) < 10) {
+      state.dragging_legs = true;
+    }
+
+    if (l2([x, y], project_ap(state.climber.hands)) < 10) {
+      state.dragging_hands = true;
+    }
+    return state;
+  };
+
+  let mouseDrag = (state, x, y) => {
+    let inv_project_ap = inv_project(state.camera, canvas.width, canvas.height);
+    let new_pos = inv_project_ap([x, y]);
+
+    if (state.dragging_center) {
+      state.climber.center = new_pos;
+    }
+
+    if (state.dragging_legs) {
+      state.climber.legs = new_pos;
+    }
+
+    if (state.dragging_hands) {
+      state.climber.hands = new_pos;
+    }
+    return state;
+  }
+
+  let mouseUp = (state) => {
+    state.dragging_center = false;
+    state.dragging_legs = false;
+    state.dragging_hands = false;
+    return state;
+  }
+
+  canvas.addEventListener("mousedown", e => {
+    var rect = canvas.getBoundingClientRect();
+    state = mouseDown(state, e.clientX - rect.left, e.clientY - rect.top);
+    mouseIsDown = true;
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (mouseIsDown) {
+      var rect = canvas.getBoundingClientRect();
+      state = mouseDrag(state, e.clientX - rect.left, e.clientY - rect.top);
+      draw(canvas, state);
+    }
+  });
+
+  document.addEventListener("mouseup", e => {
+    state = mouseUp(state);
+    mouseIsDown = false;
+  });
+
+  canvas.addEventListener("touchstart", e => {
+    state = mouseDown(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+    e.preventDefault();
+  });
+
+  canvas.addEventListener("touchmove", e => {
+    state = mouseDrag(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+    draw(canvas, state);
+    e.preventDefault();
+  });
+
+  canvas.addEventListener("touchend", e => {
+    state = mouseUp(state);
+    e.preventDefault();
+  });
+
+  slider.addEventListener("input", e => {
+    state.force_distribution = parseInt(e.target.value) / 100;
+    draw(canvas, state);
+  });
+
+
+  let onResize = () => {
+    let max_width = window.innerHeight * 0.8;
+    canvas.width = Math.min(max_width, slider.getBoundingClientRect().width);
+    canvas.height = canvas.width;
+    draw(canvas, state);
+  };
+
+  // Scenes
+
+  document.getElementById("scene-default").onclick = () => {
+    state.climber = {
+      center: [-0.5, -0.5],
+      legs: [1, -1],
+      hands: [-0.5, 1]
+    };
+    state.force_distribution = 0;
+    update_ui(state);
+    draw(canvas, state);
+    return false;
+  };
+
+  document.getElementById("scene-vertical").onclick = () => {
+    state.climber = {
+      center: [ -0.175, 0.092 ],
+      hands: [ -0.05, 1.33 ],
+      legs: [ -0.016, -0.99 ],
+    };
+    state.force_distribution = 0;
+    update_ui(state);
+    draw(canvas, state);
+    return false;
+  };
+
+  document.getElementById("scene-slab").onclick = () => {
+    state.climber = {
+      center: [ -0.017, 0.392 ],
+      hands: [ -0.891, 0.675 ],
+      legs: [ 0.7, -0.6756 ],
+    };
+    state.force_distribution = 0;
+    update_ui(state);
+    draw(canvas, state);
+    return false;
+  };
+
+  // Initialize
+
+  window.onresize = onResize;
   onResize();
 };
 

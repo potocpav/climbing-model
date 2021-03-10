@@ -1,5 +1,5 @@
 body {
-  background: #f0f0f0;
+  background:white;
   font-family:Arial, Helvetica, sans-serif;
 }
 
@@ -8,12 +8,16 @@ h1 {
   margin-bottom: 2rem;
 }
 
+h2 {
+  font-size: 120%;
+}
+
 .page {
   border-radius: 5px;
   padding: 5px;
   background: white;
   margin: 0 auto;
-  max-width: 900px;
+  max-width: 600px;
 }
 
 .canvas-div {
@@ -45,10 +49,14 @@ canvas {
 }
 
 .slider-caption td:nth-child(1) {
-  color: red;
+  color: green;
 }
 
 .slider-caption td:nth-child(2) {
   text-align: right;
   color: blue;
+}
+
+li {
+  margin: 0.5rem 0;
 }
