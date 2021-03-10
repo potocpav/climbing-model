@@ -158,17 +158,17 @@ let draw = (canvas, state) => {
   let r = [climber.hands[0] - climber.center[0], climber.hands[1] - climber.center[1]];
   let torque = calc_torque(r, f_hands);
 
-  ctx.font = "20px Arial";
+  ctx.font = "100% Arial";
   ctx.fillStyle = "red";
-  ctx.fillText("Hand force:", 10, 40);
+  ctx.fillText("Hand force:", 10, 30);
   ctx.fillStyle = "blue";
-  ctx.fillText("Leg force:", 10, 70);
+  ctx.fillText("Leg force:", 10, 50);
   ctx.fillStyle = "#444";
-  ctx.fillText("Body tension:", 10, 100);
+  ctx.fillText("Body tension:", 10, 70);
   ctx.fillStyle = "#000";
-  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 150, 40);
-  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 150, 70);
-  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 150, 100);
+  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 30);
+  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 135, 50);
+  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 135, 70);
 
 };
 
@@ -264,4 +264,18 @@ slider.addEventListener("input", e => {
   draw(canvas, state);
 });
 
-draw(canvas, state);
+
+let onResize = () => {
+  let max_width = window.innerHeight * 0.8;
+  console.log(max_width);
+  canvas.width = Math.min(max_width, slider.getBoundingClientRect().width);
+  canvas.height = canvas.width;
+  draw(canvas, state);
+};
+
+window.onload = (event) => {
+  window.onresize = onResize;
+
+  onResize();
+};
+
