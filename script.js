@@ -33,8 +33,8 @@ let norm = ([px, py]) => {
 let calc_forces = climber => {
   let r_1x = climber.hands[0] - climber.center[0];
   let r_1y = climber.hands[1] - climber.center[1];
-  let r_2x = climber.legs[0] - climber.center[0];
-  let r_2y = climber.legs[1] - climber.center[1];
+  let r_2x = climber.feet[0] - climber.center[0];
+  let r_2y = climber.feet[1] - climber.center[1];
   let g = 1;
   let k = g / (Math.pow(r_1x - r_2x, 2) + Math.pow(r_1y - r_2y, 2));
 
@@ -49,8 +49,8 @@ let calc_forces = climber => {
   let f_2yb = k * (r_1x * (r_2x - r_1x));
 
   return {
-    "min_hands": {"hands": [f_1xa, f_1ya], "legs": [f_2xa, f_2ya]},
-    "min_legs": {"hands": [f_1xb, f_1yb], "legs": [f_2xb, f_2yb]},
+    "min_hands": {"hands": [f_1xa, f_1ya], "feet": [f_2xa, f_2ya]},
+    "min_feet": {"hands": [f_1xb, f_1yb], "feet": [f_2xb, f_2yb]},
   };
 }
 
@@ -59,6 +59,8 @@ let calc_torque = ([r_x, r_y], [f_x, f_y]) => {
 }
 
 let minus = ([ax, ay], [bx, by]) => [ax - bx, ay - by];
+
+let plus = ([ax, ay], [bx, by]) => [ax + bx, ay + by];
 
 let dot = ([ax, ay], [bx, by]) => ax * bx + ay * by;
 
@@ -104,17 +106,17 @@ let draw = (canvas, state) => {
   let project_dir_ap = project_dir(state.camera, canvas.width);
 
   let center_px = project_ap(state.climber.center);
-  let legs_px = project_ap(state.climber.legs);
+  let feet_px = project_ap(state.climber.feet);
   let hands_px = project_ap(state.climber.hands);
 
   ctx.lineWidth = 3;
 
   // Draw the wall
-  let [dx, dy] = minus(hands_px, legs_px);
-  let invert = dot([dy, -dx], minus(center_px, legs_px)) > 0 ? 1 : -1;
+  let [dx, dy] = minus(hands_px, feet_px);
+  let invert = dot([dy, -dx], minus(center_px, feet_px)) > 0 ? 1 : -1;
   [dx, dy] = [dx / norm([dx, dy]) * invert, dy / norm([dx, dy]) * invert];
 
-  var my_gradient = ctx.createLinearGradient(legs_px[0], legs_px[1], legs_px[0] - dy, legs_px[1] + dx);
+  var my_gradient = ctx.createLinearGradient(feet_px[0], feet_px[1], feet_px[0] - dy, feet_px[1] + dx);
   my_gradient.addColorStop(0, "white");
   my_gradient.addColorStop(1, "lightgray");
   ctx.fillStyle = my_gradient;
@@ -125,7 +127,7 @@ let draw = (canvas, state) => {
   ctx.strokeStyle = "lightgray";
   ctx.moveTo(hands_px[0], hands_px[1]);
   ctx.lineTo(center_px[0], center_px[1]);
-  ctx.lineTo(legs_px[0], legs_px[1]);
+  ctx.lineTo(feet_px[0], feet_px[1]);
   ctx.stroke();
 
   ctx.beginPath();
@@ -135,7 +137,7 @@ let draw = (canvas, state) => {
 
   ctx.beginPath();
   ctx.strokeStyle = "blue";
-  ctx.arc(legs_px[0], legs_px[1], 10, 0, 2 * Math.PI);
+  ctx.arc(feet_px[0], feet_px[1], 10, 0, 2 * Math.PI);
   ctx.stroke();
 
   ctx.beginPath();
@@ -146,20 +148,24 @@ let draw = (canvas, state) => {
   // Draw forces
   let forces = calc_forces(state.climber);
   let f_h1_px = project_dir_ap(forces.min_hands.hands);
-  let f_h2_px = project_dir_ap(forces.min_legs.hands);
-  let f_l1_px = project_dir_ap(forces.min_hands.legs);
-  let f_l2_px = project_dir_ap(forces.min_legs.legs);
+  let f_h2_px = project_dir_ap(forces.min_feet.hands);
+  let f_l1_px = project_dir_ap(forces.min_hands.feet);
+  let f_l2_px = project_dir_ap(forces.min_feet.feet);
 
   draw_force_range(ctx, hands_px, f_h1_px, f_h2_px, state.force_distribution, "green");
-  draw_force_range(ctx, legs_px, f_l1_px, f_l2_px, state.force_distribution, "blue");
+  draw_force_range(ctx, feet_px, f_l1_px, f_l2_px, state.force_distribution, "blue");
 
   // Draw text
-  let f_hands = interpolate(forces.min_hands.hands, forces.min_legs.hands, state.force_distribution);
-  let f_legs = interpolate(forces.min_hands.legs, forces.min_legs.legs, state.force_distribution);
-  let r = [
+  let f_hands = interpolate(forces.min_hands.hands, forces.min_feet.hands, state.force_distribution);
+  let f_feet = interpolate(forces.min_hands.feet, forces.min_feet.feet, state.force_distribution);
+  let r_hands = [
     state.climber.hands[0] - state.climber.center[0],
     state.climber.hands[1] - state.climber.center[1]];
-  let torque = calc_torque(r, f_hands);
+  let r_feet = [
+    state.climber.feet[0] - state.climber.center[0],
+    state.climber.feet[1] - state.climber.center[1]];
+  let torque = calc_torque(r_hands, f_hands);
+  let body_tension = torque / (norm(r_hands) + norm(r_feet));
 
   ctx.font = "100% Arial";
   ctx.fillStyle = "green";
@@ -170,8 +176,8 @@ let draw = (canvas, state) => {
   ctx.fillText("Body tension:", 5, 60);
   ctx.fillStyle = "#000";
   ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 20);
-  ctx.fillText(`${(norm(f_legs) * 100).toFixed(0)} %`, 135, 40);
-  ctx.fillText(`${(torque * 100).toFixed(0)} %·m`, 135, 60);
+  ctx.fillText(`${(norm(f_feet) * 100).toFixed(0)} %`, 135, 40);
+  ctx.fillText(`${(body_tension * 100).toFixed(0)} %`, 135, 60);
 
 };
 
@@ -185,7 +191,7 @@ window.onload = (event) => {
 
   let climber = {
     center: [-0.5, -0.5],
-    legs: [1, -1],
+    feet: [1, -1],
     hands: [-0.5, 1]
   };
 
@@ -195,7 +201,7 @@ window.onload = (event) => {
     climber: climber,
     camera: camera,
     dragging_center: false,
-    dragging_legs: false,
+    dragging_feet: false,
     dragging_hands: false,
     force_distribution: 0.0,
   };
@@ -215,8 +221,8 @@ window.onload = (event) => {
       state.dragging_center = true;
     }
 
-    if (l2([x, y], project_ap(state.climber.legs)) < 10) {
-      state.dragging_legs = true;
+    if (l2([x, y], project_ap(state.climber.feet)) < 10) {
+      state.dragging_feet = true;
     }
 
     if (l2([x, y], project_ap(state.climber.hands)) < 10) {
@@ -233,8 +239,8 @@ window.onload = (event) => {
       state.climber.center = new_pos;
     }
 
-    if (state.dragging_legs) {
-      state.climber.legs = new_pos;
+    if (state.dragging_feet) {
+      state.climber.feet = new_pos;
     }
 
     if (state.dragging_hands) {
@@ -245,7 +251,7 @@ window.onload = (event) => {
 
   let mouseUp = (state) => {
     state.dragging_center = false;
-    state.dragging_legs = false;
+    state.dragging_feet = false;
     state.dragging_hands = false;
     return state;
   }
@@ -303,7 +309,7 @@ window.onload = (event) => {
   document.getElementById("scene-default").onclick = () => {
     state.climber = {
       center: [-0.5, -0.5],
-      legs: [1, -1],
+      feet: [1, -1],
       hands: [-0.5, 1]
     };
     state.force_distribution = 0;
@@ -316,7 +322,7 @@ window.onload = (event) => {
     state.climber = {
       center: [ -0.175, 0.092 ],
       hands: [ -0.05, 1.33 ],
-      legs: [ -0.016, -0.99 ],
+      feet: [ -0.016, -0.99 ],
     };
     state.force_distribution = 0;
     update_ui(state);
@@ -328,7 +334,7 @@ window.onload = (event) => {
     state.climber = {
       center: [ -0.017, 0.392 ],
       hands: [ -0.891, 0.675 ],
-      legs: [ 0.7, -0.6756 ],
+      feet: [ 0.7, -0.6756 ],
     };
     state.force_distribution = 0;
     update_ui(state);
