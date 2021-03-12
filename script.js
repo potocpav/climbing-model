@@ -179,7 +179,7 @@ let draw = (canvas, state) => {
     state.climber.feet[0] - state.climber.center[0],
     state.climber.feet[1] - state.climber.center[1]];
   let torque = calc_torque(r_hands, f_hands);
-  let body_tension = torque / (norm(r_hands) + norm(r_feet));
+  let body_tension = torque / (norm(r_hands) + norm(r_feet)) * 2;
 
   ctx.font = "100% Arial";
   ctx.fillStyle = "green";
