@@ -125,24 +125,38 @@ let draw = (canvas, state) => {
   // Draw the climber
   ctx.beginPath();
   ctx.strokeStyle = "lightgray";
+
   ctx.moveTo(hands_px[0], hands_px[1]);
   ctx.lineTo(center_px[0], center_px[1]);
   ctx.lineTo(feet_px[0], feet_px[1]);
+
   ctx.stroke();
 
   ctx.beginPath();
   ctx.strokeStyle = "gray";
+  ctx.fillStyle = "gray";
   ctx.arc(center_px[0], center_px[1], 20, 0, 2 * Math.PI);
+  ctx.globalAlpha = 0.2;
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.strokeStyle = "blue";
+  ctx.fillStyle = "blue";
   ctx.arc(feet_px[0], feet_px[1], 10, 0, 2 * Math.PI);
+  ctx.globalAlpha = 0.2;
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.strokeStyle = "green";
+  ctx.fillStyle = "green";
   ctx.arc(hands_px[0], hands_px[1], 10, 0, 2 * Math.PI);
+  ctx.globalAlpha = 0.2;
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
   ctx.stroke();
 
   // Draw forces
