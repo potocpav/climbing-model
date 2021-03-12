@@ -185,7 +185,7 @@ let draw = (canvas, state) => {
   ctx.fillStyle = "green";
   ctx.fillText("Hand force:", 5, 20);
   ctx.fillStyle = "blue";
-  ctx.fillText("Leg force:", 5, 40);
+  ctx.fillText("Foot force:", 5, 40);
   ctx.fillStyle = "#444";
   ctx.fillText("Body tension:", 5, 60);
   ctx.fillStyle = "#000";
