@@ -196,13 +196,13 @@ let draw = (canvas, state) => {
 };
 
 let update_ui = state => {
+  let canvas = document.getElementById("canvas");
   let slider = document.getElementById("force_slider");
-  slider.value = state.force_distribution;
-}
+  draw(canvas, state);
+  slider.value = Math.round(state.force_distribution * 100);
+};
 
-window.onload = (event) => {
-  // Initial State
-
+let default_state = () => {
   let climber = {
     center: [-0.5, -0.5],
     feet: [1, -1],
@@ -220,8 +220,41 @@ window.onload = (event) => {
     force_distribution: 0.0,
   };
 
-  // Events
+  return state;
+}
 
+let serialize = state => {
+  let [c, f] = [state.climber, state.force_distribution];
+  let json = [c.center[0], c.center[1], c.feet[0], c.feet[1], c.hands[0], c.hands[1], f]
+    .map(i => Math.round(i * 100) / 100);
+  return JSON.stringify(json);
+};
+
+let from_list = ([a, b, c, d, e, f, g]) => {
+  let state = default_state();
+  state.climber.center = [a, b];
+  state.climber.feet = [c, d];
+  state.climber.hands = [e, f];
+  state.force_distribution = Math.max(0, Math.min(1, g));
+  return state;
+}
+
+let deserialize = s => {
+  let state = default_state();
+  let l = JSON.parse(s).map(s => Number(s));
+  return from_list(l);
+};
+
+let state = default_state();
+
+// This function is global, so that it can be used in HTML links directly
+let set_state = l => {
+  state = from_list(l);
+  update_ui(state);
+}
+
+window.onload = (event) => {
+  // Events
 
   let canvas = document.getElementById("canvas");
   let slider = document.getElementById("force_slider");
@@ -280,7 +313,7 @@ window.onload = (event) => {
     if (mouseIsDown) {
       var rect = canvas.getBoundingClientRect();
       state = mouseDrag(state, e.clientX - rect.left, e.clientY - rect.top);
-      draw(canvas, state);
+      update_ui(state);
     }
   });
 
@@ -296,7 +329,7 @@ window.onload = (event) => {
 
   canvas.addEventListener("touchmove", e => {
     state = mouseDrag(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
-    draw(canvas, state);
+    update_ui(state);
     e.preventDefault();
   });
 
@@ -307,58 +340,40 @@ window.onload = (event) => {
 
   slider.addEventListener("input", e => {
     state.force_distribution = parseInt(e.target.value) / 100;
-    draw(canvas, state);
+    update_ui(state);
   });
 
+  // Link generatrion
 
-  let onResize = () => {
+  document.getElementById("permalink").onclick = () => {
+    window.location.hash = serialize(state);
+    update_ui(state);
+    return false;
+  };
+
+  // Hash loading and window resize
+
+  window.onhashchange = () => {
+    if (window.location.hash.length > 1) {
+      try {
+        state = deserialize(window.location.hash.substring(1));
+      } catch (err) {
+        console.log("Invalid permalink");
+      }
+    } else {
+      state = default_state();
+    }
+    update_ui(state);
+  };
+
+  window.onresize = () => {
     let max_width = window.innerHeight * 0.8;
     canvas.width = Math.min(max_width, slider.getBoundingClientRect().width);
     canvas.height = canvas.width;
-    draw(canvas, state);
-  };
-
-  // Scenes
-
-  document.getElementById("scene-default").onclick = () => {
-    state.climber = {
-      center: [-0.5, -0.5],
-      feet: [1, -1],
-      hands: [-0.5, 1]
-    };
-    state.force_distribution = 0;
     update_ui(state);
-    draw(canvas, state);
-    return false;
   };
 
-  document.getElementById("scene-vertical").onclick = () => {
-    state.climber = {
-      center: [ -0.175, 0.092 ],
-      hands: [ -0.05, 1.33 ],
-      feet: [ -0.016, -0.99 ],
-    };
-    state.force_distribution = 0;
-    update_ui(state);
-    draw(canvas, state);
-    return false;
-  };
-
-  document.getElementById("scene-slab").onclick = () => {
-    state.climber = {
-      center: [ -0.017, 0.392 ],
-      hands: [ -0.891, 0.675 ],
-      feet: [ 0.7, -0.6756 ],
-    };
-    state.force_distribution = 0;
-    update_ui(state);
-    draw(canvas, state);
-    return false;
-  };
-
-  // Initialize
-
-  window.onresize = onResize;
-  onResize();
+  window.onhashchange();
+  window.onresize();
 };
 
