@@ -60,3 +60,7 @@ canvas {
 li {
   margin: 0.5rem 0;
 }
+
+a.smol {
+  text-decoration: none;
+}
