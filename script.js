@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 // Maths
 
@@ -117,7 +117,7 @@ const draw = (canvas, image, state) => {
     ctx.stroke();
   };
 
-  var ctx = canvas.getContext("2d");
+  var ctx = canvas.getContext('2d');
 
   const project_ap = project(state.camera, canvas.width, canvas.height);
   const project_dir_ap = project_dir(state.camera, canvas.width);
@@ -130,7 +130,7 @@ const draw = (canvas, image, state) => {
 
   const [bg_w, bg_h] = [image.naturalWidth, image.naturalHeight];
   if (bg_w == 0) {
-    ctx.fillStyle = "white";
+    ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   } else {
     const s = Math.min(bg_w, bg_h);
@@ -145,23 +145,23 @@ const draw = (canvas, image, state) => {
   [dx, dy] = [dx / norm([dx, dy]) * invert, dy / norm([dx, dy]) * invert];
 
   var my_gradient = ctx.createLinearGradient(feet_px[0], feet_px[1], feet_px[0] - dy, feet_px[1] + dx);
-  my_gradient.addColorStop(0, "white");
-  my_gradient.addColorStop(1, "lightgray");
+  my_gradient.addColorStop(0, 'white');
+  my_gradient.addColorStop(1, 'lightgray');
   ctx.fillStyle = my_gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Draw the climber
   ctx.globalAlpha = 1.0;
   ctx.beginPath();
-  ctx.strokeStyle = "gray";
+  ctx.strokeStyle = 'gray';
   ctx.moveTo(hands_px[0], hands_px[1]);
   ctx.lineTo(center_px[0], center_px[1]);
   ctx.lineTo(feet_px[0], feet_px[1]);
   ctx.stroke();
 
-  draw_circle(center_px, 20, "gray");
-  draw_circle(feet_px, 10, "blue");
-  draw_circle(hands_px, 10, "green");
+  draw_circle(center_px, 20, 'gray');
+  draw_circle(feet_px, 10, 'blue');
+  draw_circle(hands_px, 10, 'green');
 
   // Draw forces
   const forces = calc_forces(state.climber);
@@ -172,25 +172,25 @@ const draw = (canvas, image, state) => {
   draw_force_range(ctx, hands_px,
     project_dir_ap(forces.f1(forces.min_hands_t)),
     project_dir_ap(forces.f1(forces.min_feet_t)),
-    "green");
+    'green');
   draw_force_range(ctx, feet_px,
     project_dir_ap(forces.f2(forces.min_hands_t)),
     project_dir_ap(forces.f2(forces.min_feet_t)),
-    "blue");
+    'blue');
   draw_force(ctx, hands_px,
-    project_dir_ap(forces.f1(t)), "green");
+    project_dir_ap(forces.f1(t)), 'green');
   draw_force(ctx, feet_px,
-    project_dir_ap(forces.f2(t)), "blue");
+    project_dir_ap(forces.f2(t)), 'blue');
 
   // Draw text
-  ctx.font = "100% Arial";
-  ctx.fillStyle = "green";
-  ctx.fillText("Hand force:", 5, 20);
-  ctx.fillStyle = "blue";
-  ctx.fillText("Foot force:", 5, 40);
-  ctx.fillStyle = "#444";
-  ctx.fillText("Body tension:", 5, 60);
-  ctx.fillStyle = "#000";
+  ctx.font = '100% Arial';
+  ctx.fillStyle = 'green';
+  ctx.fillText('Hand force:', 5, 20);
+  ctx.fillStyle = 'blue';
+  ctx.fillText('Foot force:', 5, 40);
+  ctx.fillStyle = '#444';
+  ctx.fillText('Body tension:', 5, 60);
+  ctx.fillStyle = '#000';
   ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 20);
   ctx.fillText(`${(norm(f_feet) * 100).toFixed(0)} %`, 135, 40);
   ctx.fillText(`${(Math.abs(t) * 100).toFixed(0)} %·m`, 135, 60);
@@ -198,9 +198,9 @@ const draw = (canvas, image, state) => {
 };
 
 const update_ui = state => {
-  const canvas = document.getElementById("canvas");
-  const slider = document.getElementById("force_slider");
-  const bg_img = document.getElementById("bg_image");
+  const canvas = document.getElementById('canvas');
+  const slider = document.getElementById('force_slider');
+  const bg_img = document.getElementById('bg_image');
   draw(canvas, bg_img, state);
   slider.value = Math.round(state.force * 100);
 };
@@ -212,7 +212,7 @@ const default_state = () => {
     hands: [-0.5, 1]
   };
 
-  const camera = {"center": [0, 0], "width": 5};
+  const camera = {'center': [0, 0], 'width': 5};
 
   const state = {
     climber: climber,
@@ -259,9 +259,9 @@ const set_state = l => {
 window.onload = (event) => {
   // Events
 
-  const canvas = document.getElementById("canvas");
-  const slider = document.getElementById("force_slider");
-  const bg_image = document.getElementById("bg_image");
+  const canvas = document.getElementById('canvas');
+  const slider = document.getElementById('force_slider');
+  const bg_image = document.getElementById('bg_image');
 
 
   let mouseIsDown = false;
@@ -308,13 +308,13 @@ window.onload = (event) => {
     return state;
   }
 
-  canvas.addEventListener("mousedown", e => {
+  canvas.addEventListener('mousedown', e => {
     var rect = canvas.getBoundingClientRect();
     state = mouseDown(state, e.clientX - rect.left, e.clientY - rect.top);
     mouseIsDown = true;
   });
 
-  document.addEventListener("mousemove", e => {
+  document.addEventListener('mousemove', e => {
     if (mouseIsDown) {
       var rect = canvas.getBoundingClientRect();
       state = mouseDrag(state, e.clientX - rect.left, e.clientY - rect.top);
@@ -322,35 +322,35 @@ window.onload = (event) => {
     }
   });
 
-  document.addEventListener("mouseup", e => {
+  document.addEventListener('mouseup', e => {
     state = mouseUp(state);
     mouseIsDown = false;
   });
 
-  canvas.addEventListener("touchstart", e => {
+  canvas.addEventListener('touchstart', e => {
     state = mouseDown(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
     e.preventDefault();
   });
 
-  canvas.addEventListener("touchmove", e => {
+  canvas.addEventListener('touchmove', e => {
     state = mouseDrag(state, e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
     update_ui(state);
     e.preventDefault();
   });
 
-  canvas.addEventListener("touchend", e => {
+  canvas.addEventListener('touchend', e => {
     state = mouseUp(state);
     e.preventDefault();
   });
 
-  slider.addEventListener("input", e => {
+  slider.addEventListener('input', e => {
     state.force = parseInt(e.target.value) / 100;
     update_ui(state);
   });
 
   // Link generatrion
 
-  document.getElementById("permalink").onclick = () => {
+  document.getElementById('permalink').onclick = () => {
     window.location.hash = serialize(state);
     update_ui(state);
     return false;
@@ -363,7 +363,7 @@ window.onload = (event) => {
       try {
         state = deserialize(window.location.hash.substring(1));
       } catch (err) {
-        console.log("Invalid permalink");
+        console.log('Invalid permalink');
       }
     } else {
       state = default_state();
