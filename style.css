@@ -44,8 +44,12 @@ canvas {
 	box-sizing: border-box;
 }
 
-.slider-caption {
+table {
   width: 100%;
+}
+
+table td:nth-child(2) {
+  text-align: right;
 }
 
 .slider-caption td:nth-child(1) {
@@ -53,7 +57,6 @@ canvas {
 }
 
 .slider-caption td:nth-child(2) {
-  text-align: right;
   color: blue;
 }
 

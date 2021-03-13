@@ -105,7 +105,7 @@ let draw_force = (ctx, pos, f, color) => {
   ctx.stroke();
 };
 
-let draw = (canvas, state) => {
+let draw = (canvas, image, state) => {
   let draw_circle = ([x, y], r, color) => {
     ctx.beginPath();
     ctx.strokeStyle = color;
@@ -118,7 +118,6 @@ let draw = (canvas, state) => {
   };
 
   var ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let project_ap = project(state.camera, canvas.width, canvas.height);
   let project_dir_ap = project_dir(state.camera, canvas.width);
@@ -129,7 +128,18 @@ let draw = (canvas, state) => {
 
   ctx.lineWidth = 3;
 
+  let [bg_w, bg_h] = [image.naturalWidth, image.naturalHeight];
+  if (bg_w == 0) {
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    let s = Math.min(bg_w, bg_h);
+    let [mx, my] = [(bg_w - s) / 2, (bg_h - s) / 2];
+    ctx.drawImage(image, mx, my, s, s, 0, 0, canvas.width, canvas.height);
+  }
+
   // Draw the wall
+  ctx.globalAlpha = 0.7;
   let [dx, dy] = minus(hands_px, feet_px);
   let invert = dot([dy, -dx], minus(center_px, feet_px)) > 0 ? 1 : -1;
   [dx, dy] = [dx / norm([dx, dy]) * invert, dy / norm([dx, dy]) * invert];
@@ -141,8 +151,9 @@ let draw = (canvas, state) => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Draw the climber
+  ctx.globalAlpha = 1.0;
   ctx.beginPath();
-  ctx.strokeStyle = "lightgray";
+  ctx.strokeStyle = "gray";
   ctx.moveTo(hands_px[0], hands_px[1]);
   ctx.lineTo(center_px[0], center_px[1]);
   ctx.lineTo(feet_px[0], feet_px[1]);
@@ -189,7 +200,8 @@ let draw = (canvas, state) => {
 let update_ui = state => {
   let canvas = document.getElementById("canvas");
   let slider = document.getElementById("force_slider");
-  draw(canvas, state);
+  let bg_img = document.getElementById("bg_image");
+  draw(canvas, bg_img, state);
   slider.value = Math.round(state.force * 100);
 };
 
@@ -249,6 +261,8 @@ window.onload = (event) => {
 
   let canvas = document.getElementById("canvas");
   let slider = document.getElementById("force_slider");
+  let bg_image = document.getElementById("bg_image");
+
 
   let mouseIsDown = false;
 
@@ -363,6 +377,45 @@ window.onload = (event) => {
     canvas.height = canvas.width;
     update_ui(state);
   };
+
+  // Background image selector & file drag & drop
+
+  bg_image.onload = () => {
+    update_ui(state);;
+  };
+
+  const readImage = file => {
+    // Check if the file is an image.
+    if (file.type && file.type.indexOf('image') === -1) {
+      console.log('File is not an image.', file.type, file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', (event) => {
+      bg_image.src = event.target.result;
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const fileSelector = document.getElementById('file-selector');
+  fileSelector.addEventListener('change', (event) => {
+    const fileList = event.target.files;
+    readImage(fileList[0]);
+  });
+
+  window.addEventListener('dragover', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  });
+
+  window.addEventListener('drop', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const fileList = event.dataTransfer.files;
+    readImage(fileList[0]);
+  });
 
   window.onhashchange();
   window.onresize();
