@@ -4,15 +4,15 @@ from sympy import *
 from sympy.solvers import solve
 from IPython.display import display
 
-# %% Define the equation specifying the problem
+# %% Define the variables
 
 # hand/foot distances from center
 r_1x, r_1y, r_2x, r_2y = symbols('r_1x r_1y r_2x r_2y')
-# gravitational constant if you want your forces in Newtons
+# Climber weight, if you want your forces in Newtons
 g = symbols('g')
 
 
-# %% Find the zero-tension solution
+# %% Find the zero-torque solution
 
 A = Matrix([
   [-r_1y, r_1x, 0, 0],
@@ -22,7 +22,7 @@ A = Matrix([
   ])
 b = Matrix([0, 0, 0, -g])
 
-print("Zero-tension solution:")
+print("Zero-torque solution:")
 f0 = A.inverse_GE() * b
 fac = simplify(-1 / A.det())
 display(fac)
@@ -41,14 +41,14 @@ b = Matrix([0, 0, -g])
 kernel = A.nullspace()[0] * (r_1y - r_2y) * fac
 display(kernel)
 
-# %% Parametrize
+# %% Parametrize by
 
 t = symbols('t')
 
 solution = simplify(f0 + t * kernel)
-tension = simplify(solution[1] * r_1x - solution[0] * r_1y)
-# display(tension)
-assert(tension == t)
+torque = simplify(solution[1] * r_1x - solution[0] * r_1y)
+
+assert(torque == t)
 
 display(fac)
 simplify(solution / fac)

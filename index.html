@@ -12,10 +12,10 @@
       <h1>Climbing Force Simulator</h1>
       <p>Circles represent climber's <span style="color: green; font-weight: bold">hands</span>, <span style="color: blue; font-weight: bold">feet</span>, and the <span style="color: #111; font-weight: bold">center of mass</span>. Try dragging these three circles around, and see how the forces required to hold on change. In every position, it is posible to vary the body tension to shift weight towards climber's hands or feet.</p>
       <div class="slidecontainer">
-        Body tension:
-        <input type="range" min="-100" max="100" value="0" class="slider" id="tension_slider">
+        Which force to minimize:
+        <input type="range" min="0" max="100" value="0" class="slider" id="force_slider">
         <table class="slider-caption">
-          <tr><td>-100%</td><td>0%</td><td>100%</td></td></tr>
+          <tr><td>Hands</td><td>Feet</td></tr>
         </table>
       </div>
 
@@ -41,9 +41,9 @@
       </p><p>
         You can try it in real world. While climbing, it is always possible to pull on your hands in various ways such that your body position doesn't change. You can use this fact to optimize the forces in your fingers, maximize friction, etc. This app allows you to experiment with it virtually.
       </p><p>
-        Force units are in % of body weight. For example, if your body mass is 60kg, then your body weight is ~600N. Force of 50% is then equivalent to 300N. "Body tension" is the <a href="https://en.wikipedia.org/wiki/Torque" class="smol">torque</a> required to keep the "extremities" from changing relative angle, divided by half the total body length. Unit is, again, % of body weight.
+        Force units are in % of body weight. For example, if your body mass is 60kg, then your body weight is ~600N. Force of 50% is then equivalent to 300N. "Body tension" is the <a href="https://en.wikipedia.org/wiki/Torque" class="smol">torque</a> required to keep the "extremities" from changing relative angle. Unit is % of body weight times meter.
       </p><p>
-        You can check out the <a href="https://github.com/potocpav/climbing-model">source code on GitHub</a>.
+        You can check out the <a href="https://github.com/potocpav/climbing-model">source code on GitHub</a>, or you can discuss the app <a href="https://www.reddit.com/r/climbing/comments/m3fidp/i_made_a_webpage_that_allows_you_to_experiment/">on&nbsp;Reddit</a>.
       </p><p>
       </p>
       </div>

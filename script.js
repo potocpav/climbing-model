@@ -70,11 +70,9 @@ let dot = ([ax, ay], [bx, by]) => ax * bx + ay * by;
 
 // Draw
 
-let draw_force_range = (ctx, pos, f1, f2, fac, color) => {
+let draw_force_range = (ctx, pos, f1, f2, color) => {
   let scale = 1.0;
-  let f = interpolate(f1, f2, fac);
 
-  // value range
   ctx.beginPath();
   ctx.globalAlpha = 0.2
   ctx.fillStyle = color
@@ -82,36 +80,19 @@ let draw_force_range = (ctx, pos, f1, f2, fac, color) => {
   ctx.lineTo(pos[0] + f1[0] * scale, pos[1] + f1[1] * scale);
   ctx.lineTo(pos[0] + f2[0] * scale, pos[1] + f2[1] * scale);
   ctx.fill();
-
-  // force arrow
-  let width = 3;
-  let head_size = width * 2;
-  let dx = f[0] / norm(f);
-  let dy = f[1] / norm(f);
-  let tip = [pos[0] + f[0] * scale, pos[1] + f[1] * scale];
-
-  ctx.beginPath();
-  ctx.lineWidth = width;
-  ctx.globalAlpha = 1.0
-  ctx.strokeStyle = color
-  ctx.moveTo(pos[0], pos[1]);
-  ctx.lineTo(tip[0], tip[1]);
-  ctx.moveTo(tip[0] + (dy - dx) * head_size, tip[1] + (-dy - dx) * head_size);
-  ctx.lineTo(tip[0], tip[1]);
-  ctx.lineTo(tip[0] + (-dy - dx) * head_size, tip[1] + (-dy + dx) * head_size);
-  ctx.stroke();
 };
 
 let draw_force = (ctx, pos, f, color) => {
   let scale = 1.0;
 
-  // force arrow
+  // force arrow head computation
   let width = 3;
   let head_size = width * 2;
   let dx = f[0] / norm(f);
   let dy = f[1] / norm(f);
   let tip = [pos[0] + f[0] * scale, pos[1] + f[1] * scale];
 
+  // draw the arrow
   ctx.beginPath();
   ctx.lineWidth = width;
   ctx.globalAlpha = 1.0
@@ -173,12 +154,22 @@ let draw = (canvas, state) => {
 
   // Draw forces
   let forces = calc_forces(state.climber);
-  let f_hands = forces.f1(state.tension);
-  let f_feet = forces.f2(state.tension);
-  let body_tension = Math.abs(state.tension);
+  let t = forces.min_hands_t * (1 - state.force) + forces.min_feet_t * state.force;
+  let f_hands = forces.f1(t);
+  let f_feet = forces.f2(t);
 
-  draw_force(ctx, hands_px, project_dir_ap(forces.f1(state.tension)), "green");
-  draw_force(ctx, feet_px, project_dir_ap(forces.f2(state.tension)), "blue");
+  draw_force_range(ctx, hands_px,
+    project_dir_ap(forces.f1(forces.min_hands_t)),
+    project_dir_ap(forces.f1(forces.min_feet_t)),
+    "green");
+  draw_force_range(ctx, feet_px,
+    project_dir_ap(forces.f2(forces.min_hands_t)),
+    project_dir_ap(forces.f2(forces.min_feet_t)),
+    "blue");
+  draw_force(ctx, hands_px,
+    project_dir_ap(forces.f1(t)), "green");
+  draw_force(ctx, feet_px,
+    project_dir_ap(forces.f2(t)), "blue");
 
   // Draw text
   ctx.font = "100% Arial";
@@ -191,15 +182,15 @@ let draw = (canvas, state) => {
   ctx.fillStyle = "#000";
   ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 20);
   ctx.fillText(`${(norm(f_feet) * 100).toFixed(0)} %`, 135, 40);
-  ctx.fillText(`${(body_tension * 100).toFixed(0)} %`, 135, 60);
+  ctx.fillText(`${(Math.abs(t) * 100).toFixed(0)} %·m`, 135, 60);
 
 };
 
 let update_ui = state => {
   let canvas = document.getElementById("canvas");
-  let slider = document.getElementById("tension_slider");
+  let slider = document.getElementById("force_slider");
   draw(canvas, state);
-  slider.value = Math.round(state.tension * 100);
+  slider.value = Math.round(state.force * 100);
 };
 
 let default_state = () => {
@@ -217,14 +208,14 @@ let default_state = () => {
     dragging_center: false,
     dragging_feet: false,
     dragging_hands: false,
-    tension: 0.0,
+    force: 0.0,
   };
 
   return state;
 }
 
 let serialize = state => {
-  let [c, f] = [state.climber, state.tension];
+  let [c, f] = [state.climber, state.force];
   let json = [c.center[0], c.center[1], c.feet[0], c.feet[1], c.hands[0], c.hands[1], f]
     .map(i => Math.round(i * 100) / 100);
   return JSON.stringify(json);
@@ -235,7 +226,7 @@ let from_list = ([a, b, c, d, e, f, g]) => {
   state.climber.center = [a, b];
   state.climber.feet = [c, d];
   state.climber.hands = [e, f];
-  state.tension = Math.max(0, Math.min(1, g));
+  state.force = Math.max(0, Math.min(1, g));
   return state;
 }
 
@@ -257,7 +248,7 @@ window.onload = (event) => {
   // Events
 
   let canvas = document.getElementById("canvas");
-  let slider = document.getElementById("tension_slider");
+  let slider = document.getElementById("force_slider");
 
   let mouseIsDown = false;
 
@@ -268,11 +259,11 @@ window.onload = (event) => {
       state.dragging_center = true;
     }
 
-    if (l2([x, y], project_ap(state.climber.feet)) < 10) {
+    if (l2([x, y], project_ap(state.climber.feet)) < 15) {
       state.dragging_feet = true;
     }
 
-    if (l2([x, y], project_ap(state.climber.hands)) < 10) {
+    if (l2([x, y], project_ap(state.climber.hands)) < 15) {
       state.dragging_hands = true;
     }
     return state;
@@ -339,7 +330,7 @@ window.onload = (event) => {
   });
 
   slider.addEventListener("input", e => {
-    state.tension = parseInt(e.target.value) / 100;
+    state.force = parseInt(e.target.value) / 100;
     update_ui(state);
   });
 
