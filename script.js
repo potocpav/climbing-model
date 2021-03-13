@@ -36,23 +36,27 @@ let calc_forces = climber => {
   let r_2x = climber.feet[0] - climber.center[0];
   let r_2y = climber.feet[1] - climber.center[1];
   let g = 1;
-  let k = g / (Math.pow(r_1x - r_2x, 2) + Math.pow(r_1y - r_2y, 2));
 
-  let f_1xa = k * (r_2x * (r_2y - r_1y));
-  let f_1xb = k * (r_1x * (r_2y - r_1y));
-  let f_1ya = k * (r_2x * (r_1x - r_2x));
-  let f_1yb = k * (r_1x * r_2x - r_2x * r_2x - Math.pow(r_1y - r_2y, 2));
+  let fac = 1 / (r_1x * r_2y - r_1y * r_2x);
+  let dist = Math.pow(r_1x - r_2x, 2) + Math.pow(r_1y - r_2y, 2);
 
-  let f_2xa = k * (r_2x * (r_1y - r_2y));
-  let f_2xb = k * (r_1x * (r_1y - r_2y));
-  let f_2ya = k * (r_1x * r_2x - r_1x * r_1x - Math.pow(r_1y - r_2y, 2));
-  let f_2yb = k * (r_1x * (r_2x - r_1x));
+  // Forces, depending on torque `t`
+  let f1 = t => [
+    fac * (g * r_1x * r_2x - t * (r_1x - r_2x)),
+    fac * (g * r_1y * r_2x - t * (r_1y - r_2y))];
 
-  return {
-    "min_hands": {"hands": [f_1xa, f_1ya], "feet": [f_2xa, f_2ya]},
-    "min_feet": {"hands": [f_1xb, f_1yb], "feet": [f_2xb, f_2yb]},
-  };
-}
+  let f2 = t => [
+    fac * (-g * r_1x * r_2x + t * (r_1x - r_2x)),
+    fac * (-g * r_1x * r_2y + t * (r_1y - r_2y))];
+
+  // Minimum force parameters
+  let min_hands_t = g * r_2x / dist *
+    (r_1x * (r_1x - r_2x) + r_1y * (r_1y - r_2y));
+  let min_feet_t = g * r_1x / dist *
+    (r_2x * (r_1x - r_2x) + r_2y * (r_1y - r_2y));
+
+    return {f1, f2, min_hands_t, min_feet_t};
+};
 
 let calc_torque = ([r_x, r_y], [f_x, f_y]) => {
   return Math.abs(r_x * f_y - r_y * f_x);
@@ -98,7 +102,40 @@ let draw_force_range = (ctx, pos, f1, f2, fac, color) => {
   ctx.stroke();
 };
 
+let draw_force = (ctx, pos, f, color) => {
+  let scale = 1.0;
+
+  // force arrow
+  let width = 3;
+  let head_size = width * 2;
+  let dx = f[0] / norm(f);
+  let dy = f[1] / norm(f);
+  let tip = [pos[0] + f[0] * scale, pos[1] + f[1] * scale];
+
+  ctx.beginPath();
+  ctx.lineWidth = width;
+  ctx.globalAlpha = 1.0
+  ctx.strokeStyle = color
+  ctx.moveTo(pos[0], pos[1]);
+  ctx.lineTo(tip[0], tip[1]);
+  ctx.moveTo(tip[0] + (dy - dx) * head_size, tip[1] + (-dy - dx) * head_size);
+  ctx.lineTo(tip[0], tip[1]);
+  ctx.lineTo(tip[0] + (-dy - dx) * head_size, tip[1] + (-dy + dx) * head_size);
+  ctx.stroke();
+};
+
 let draw = (canvas, state) => {
+  let draw_circle = ([x, y], r, color) => {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+    ctx.globalAlpha = 0.2;
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+    ctx.stroke();
+  };
+
   var ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -125,62 +162,25 @@ let draw = (canvas, state) => {
   // Draw the climber
   ctx.beginPath();
   ctx.strokeStyle = "lightgray";
-
   ctx.moveTo(hands_px[0], hands_px[1]);
   ctx.lineTo(center_px[0], center_px[1]);
   ctx.lineTo(feet_px[0], feet_px[1]);
-
   ctx.stroke();
 
-  ctx.beginPath();
-  ctx.strokeStyle = "gray";
-  ctx.fillStyle = "gray";
-  ctx.arc(center_px[0], center_px[1], 20, 0, 2 * Math.PI);
-  ctx.globalAlpha = 0.2;
-  ctx.fill();
-  ctx.globalAlpha = 1.0;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "blue";
-  ctx.fillStyle = "blue";
-  ctx.arc(feet_px[0], feet_px[1], 10, 0, 2 * Math.PI);
-  ctx.globalAlpha = 0.2;
-  ctx.fill();
-  ctx.globalAlpha = 1.0;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "green";
-  ctx.fillStyle = "green";
-  ctx.arc(hands_px[0], hands_px[1], 10, 0, 2 * Math.PI);
-  ctx.globalAlpha = 0.2;
-  ctx.fill();
-  ctx.globalAlpha = 1.0;
-  ctx.stroke();
+  draw_circle(center_px, 20, "gray");
+  draw_circle(feet_px, 10, "blue");
+  draw_circle(hands_px, 10, "green");
 
   // Draw forces
   let forces = calc_forces(state.climber);
-  let f_h1_px = project_dir_ap(forces.min_hands.hands);
-  let f_h2_px = project_dir_ap(forces.min_feet.hands);
-  let f_l1_px = project_dir_ap(forces.min_hands.feet);
-  let f_l2_px = project_dir_ap(forces.min_feet.feet);
+  let f_hands = forces.f1(state.tension);
+  let f_feet = forces.f2(state.tension);
+  let body_tension = Math.abs(state.tension);
 
-  draw_force_range(ctx, hands_px, f_h1_px, f_h2_px, state.force_distribution, "green");
-  draw_force_range(ctx, feet_px, f_l1_px, f_l2_px, state.force_distribution, "blue");
+  draw_force(ctx, hands_px, project_dir_ap(forces.f1(state.tension)), "green");
+  draw_force(ctx, feet_px, project_dir_ap(forces.f2(state.tension)), "blue");
 
   // Draw text
-  let f_hands = interpolate(forces.min_hands.hands, forces.min_feet.hands, state.force_distribution);
-  let f_feet = interpolate(forces.min_hands.feet, forces.min_feet.feet, state.force_distribution);
-  let r_hands = [
-    state.climber.hands[0] - state.climber.center[0],
-    state.climber.hands[1] - state.climber.center[1]];
-  let r_feet = [
-    state.climber.feet[0] - state.climber.center[0],
-    state.climber.feet[1] - state.climber.center[1]];
-  let torque = calc_torque(r_hands, f_hands);
-  let body_tension = torque / (norm(r_hands) + norm(r_feet)) * 2;
-
   ctx.font = "100% Arial";
   ctx.fillStyle = "green";
   ctx.fillText("Hand force:", 5, 20);
@@ -197,9 +197,9 @@ let draw = (canvas, state) => {
 
 let update_ui = state => {
   let canvas = document.getElementById("canvas");
-  let slider = document.getElementById("force_slider");
+  let slider = document.getElementById("tension_slider");
   draw(canvas, state);
-  slider.value = Math.round(state.force_distribution * 100);
+  slider.value = Math.round(state.tension * 100);
 };
 
 let default_state = () => {
@@ -217,14 +217,14 @@ let default_state = () => {
     dragging_center: false,
     dragging_feet: false,
     dragging_hands: false,
-    force_distribution: 0.0,
+    tension: 0.0,
   };
 
   return state;
 }
 
 let serialize = state => {
-  let [c, f] = [state.climber, state.force_distribution];
+  let [c, f] = [state.climber, state.tension];
   let json = [c.center[0], c.center[1], c.feet[0], c.feet[1], c.hands[0], c.hands[1], f]
     .map(i => Math.round(i * 100) / 100);
   return JSON.stringify(json);
@@ -235,7 +235,7 @@ let from_list = ([a, b, c, d, e, f, g]) => {
   state.climber.center = [a, b];
   state.climber.feet = [c, d];
   state.climber.hands = [e, f];
-  state.force_distribution = Math.max(0, Math.min(1, g));
+  state.tension = Math.max(0, Math.min(1, g));
   return state;
 }
 
@@ -257,7 +257,7 @@ window.onload = (event) => {
   // Events
 
   let canvas = document.getElementById("canvas");
-  let slider = document.getElementById("force_slider");
+  let slider = document.getElementById("tension_slider");
 
   let mouseIsDown = false;
 
@@ -339,7 +339,7 @@ window.onload = (event) => {
   });
 
   slider.addEventListener("input", e => {
-    state.force_distribution = parseInt(e.target.value) / 100;
+    state.tension = parseInt(e.target.value) / 100;
     update_ui(state);
   });
 
