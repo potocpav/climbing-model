@@ -217,9 +217,7 @@ const default_state = () => {
   const state = {
     climber: climber,
     camera: camera,
-    dragging_center: false,
-    dragging_feet: false,
-    dragging_hands: false,
+    dragging: null,
     force: 0.0,
   };
 
@@ -268,43 +266,28 @@ window.onload = (event) => {
 
   const mouseDown = (state, x, y) => {
     const project_ap = project(state.camera, canvas.width, canvas.height);
+    const grab_radius = {center: 20, feet: 15, hands: 15};
 
-    if (l2([x, y], project_ap(state.climber.center)) < 20) {
-      state.dragging_center = true;
-    }
+    // Drag at most one point: the closest one within its grab radius
+    const candidates = Object.keys(grab_radius)
+      .map(name => [name, l2([x, y], project_ap(state.climber[name]))])
+      .filter(([name, dist]) => dist < grab_radius[name])
+      .sort((a, b) => a[1] - b[1]);
 
-    if (l2([x, y], project_ap(state.climber.feet)) < 15) {
-      state.dragging_feet = true;
-    }
-
-    if (l2([x, y], project_ap(state.climber.hands)) < 15) {
-      state.dragging_hands = true;
-    }
+    state.dragging = candidates.length > 0 ? candidates[0][0] : null;
     return state;
   };
 
   const mouseDrag = (state, x, y) => {
-    const inv_project_ap = inv_project(state.camera, canvas.width, canvas.height);
-    const new_pos = inv_project_ap([x, y]);
-
-    if (state.dragging_center) {
-      state.climber.center = new_pos;
-    }
-
-    if (state.dragging_feet) {
-      state.climber.feet = new_pos;
-    }
-
-    if (state.dragging_hands) {
-      state.climber.hands = new_pos;
+    if (state.dragging !== null) {
+      const inv_project_ap = inv_project(state.camera, canvas.width, canvas.height);
+      state.climber[state.dragging] = inv_project_ap([x, y]);
     }
     return state;
   }
 
   const mouseUp = (state) => {
-    state.dragging_center = false;
-    state.dragging_feet = false;
-    state.dragging_hands = false;
+    state.dragging = null;
     return state;
   }
 
