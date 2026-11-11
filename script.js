@@ -142,12 +142,18 @@ const draw = (canvas, image, state) => {
   ctx.globalAlpha = 0.7;
   let [dx, dy] = minus(hands_px, feet_px);
   const invert = dot([dy, -dx], minus(center_px, feet_px)) > 0 ? 1 : -1;
-  [dx, dy] = [dx / norm([dx, dy]) * invert, dy / norm([dx, dy]) * invert];
+  const wall_len = norm([dx, dy]);
 
-  var my_gradient = ctx.createLinearGradient(feet_px[0], feet_px[1], feet_px[0] - dy, feet_px[1] + dx);
-  my_gradient.addColorStop(0, 'white');
-  my_gradient.addColorStop(1, 'lightgray');
-  ctx.fillStyle = my_gradient;
+  if (wall_len > 0) {
+    [dx, dy] = [dx / wall_len * invert, dy / wall_len * invert];
+    const my_gradient = ctx.createLinearGradient(feet_px[0], feet_px[1], feet_px[0] - dy, feet_px[1] + dx);
+    my_gradient.addColorStop(0, 'white');
+    my_gradient.addColorStop(1, 'lightgray');
+    ctx.fillStyle = my_gradient;
+  } else {
+    // Hands and feet coincide: the wall direction is undefined
+    ctx.fillStyle = 'lightgray';
+  }
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Draw the climber
@@ -169,18 +175,29 @@ const draw = (canvas, image, state) => {
   const f_hands = forces.f1(t);
   const f_feet = forces.f2(t);
 
-  draw_force_range(ctx, hands_px,
-    project_dir_ap(forces.f1(forces.min_hands_t)),
-    project_dir_ap(forces.f1(forces.min_feet_t)),
-    'green');
-  draw_force_range(ctx, feet_px,
-    project_dir_ap(forces.f2(forces.min_hands_t)),
-    project_dir_ap(forces.f2(forces.min_feet_t)),
-    'blue');
-  draw_force(ctx, hands_px,
-    project_dir_ap(forces.f1(t)), 'green');
-  draw_force(ctx, feet_px,
-    project_dir_ap(forces.f2(t)), 'blue');
+  // Degenerate positions (coinciding points, collinear center) give
+  // non-finite forces; skip drawing them in that case.
+  const forces_valid = [
+    t,
+    ...forces.f1(forces.min_hands_t), ...forces.f1(forces.min_feet_t),
+    ...forces.f2(forces.min_hands_t), ...forces.f2(forces.min_feet_t),
+    ...f_hands, ...f_feet,
+  ].every(Number.isFinite);
+
+  if (forces_valid) {
+    draw_force_range(ctx, hands_px,
+      project_dir_ap(forces.f1(forces.min_hands_t)),
+      project_dir_ap(forces.f1(forces.min_feet_t)),
+      'green');
+    draw_force_range(ctx, feet_px,
+      project_dir_ap(forces.f2(forces.min_hands_t)),
+      project_dir_ap(forces.f2(forces.min_feet_t)),
+      'blue');
+    draw_force(ctx, hands_px,
+      project_dir_ap(f_hands), 'green');
+    draw_force(ctx, feet_px,
+      project_dir_ap(f_feet), 'blue');
+  }
 
   // Draw text
   ctx.font = '100% Arial';
@@ -191,9 +208,10 @@ const draw = (canvas, image, state) => {
   ctx.fillStyle = '#444';
   ctx.fillText('Body tension:', 5, 60);
   ctx.fillStyle = '#000';
-  ctx.fillText(`${(norm(f_hands) * 100).toFixed(0)} %`, 135, 20);
-  ctx.fillText(`${(norm(f_feet) * 100).toFixed(0)} %`, 135, 40);
-  ctx.fillText(`${(Math.abs(t) * 100).toFixed(0)} %·m`, 135, 60);
+  const fmt = (v, unit) => forces_valid ? `${(v * 100).toFixed(0)} ${unit}` : '—';
+  ctx.fillText(fmt(norm(f_hands), '%'), 135, 20);
+  ctx.fillText(fmt(norm(f_feet), '%'), 135, 40);
+  ctx.fillText(fmt(Math.abs(t), '%·m'), 135, 60);
 
 };
 
