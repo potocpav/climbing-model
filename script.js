@@ -351,9 +351,29 @@ window.onload = (event) => {
 
   // Link generatrion
 
+  const permalink_status = document.getElementById('permalink_status');
+  let permalink_timeout = null;
+
+  const show_permalink_status = text => {
+    permalink_status.textContent = text;
+    clearTimeout(permalink_timeout);
+    permalink_timeout = setTimeout(() => {
+      permalink_status.textContent = '(copy\u00a0URL)';
+    }, 2000);
+  };
+
   document.getElementById('permalink').onclick = () => {
     window.location.hash = serialize(state);
     update_ui(state);
+
+    // The Clipboard API is only available in secure contexts (https, localhost)
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => show_permalink_status('(copied!)'))
+        .catch(() => show_permalink_status('(copy the URL from the address bar)'));
+    } else {
+      show_permalink_status('(copy the URL from the address bar)');
+    }
     return false;
   };
 
